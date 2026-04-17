@@ -46,7 +46,7 @@ async function uploadToAssemblyAI(audioBlob, onProgress) {
       },
       body: JSON.stringify({
         audio_url: uploadUrl,
-        speech_model: 'best',  // Correct: singular key with 'best' value
+        speech_models: ['universal-2'],  // Current API: plural with explicit model
       }),
     });
 
