@@ -165,11 +165,6 @@
   .empty p {
     font-size: 12px;
   }
-
-  button {
-    padding: 10px 12px;
-    font-size: 13px;
-  }
 }
 
 .title {
