@@ -148,6 +148,193 @@ textarea.input { resize: vertical; min-height: 100px; }
 ::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--gray-400); }
 
+/* ========================================
+   MOBILE & PWA OPTIMIZATIONS
+   ======================================== */
+
+/* Ensure viewport doesn't zoom on input focus */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+    padding-bottom: max(0px, env(safe-area-inset-bottom));
+  }
+}
+
+/* Touch-friendly button sizing */
+@media (max-width: 768px) {
+  html {
+    font-size: 14px;
+  }
+
+  /* Ensure buttons are at least 44px tall (touch target) */
+  .btn {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 12px 16px;
+    font-size: 16px; /* Prevents zoom on iOS */
+    border-radius: 12px;
+  }
+
+  .input {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 12px;
+    min-height: 44px;
+  }
+
+  textarea.input {
+    min-height: 100px;
+  }
+
+  /* Add padding to avoid notches */
+  body {
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+
+  /* Stack layouts vertically */
+  .row {
+    flex-direction: column !important;
+  }
+
+  /* Reduce shadows on mobile for better performance */
+  .card {
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  }
+
+  /* Reduce animations on mobile */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+}
+
+/* Small mobile devices (< 400px) */
+@media (max-width: 400px) {
+  html {
+    font-size: 13px;
+  }
+
+  .btn {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+
+  h1 {
+    font-size: 24px;
+  }
+
+  h2 {
+    font-size: 20px;
+  }
+
+  /* More aggressive compression on very small screens */
+  .card {
+    border-radius: 8px;
+  }
+}
+
+/* Prevent bounce scroll on iOS */
+body {
+  overscroll-behavior-y: contain;
+}
+
+/* Optimize for viewport meta tag */
+@viewport {
+  width: device-width;
+  zoom: 1;
+}
+
+/* Disable text selection on buttons (mobile optimization) */
+.btn,
+.badge,
+[role="button"] {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Better focus styles for keyboard users */
+@media (prefers-reduced-motion: no-preference) {
+  .btn:focus-visible,
+  .input:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 2px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --off-white: #1a1a1a;
+    --gray-50: #2d2d2d;
+    --gray-100: #3f3f3f;
+    --gray-200: #525252;
+    --gray-600: #a0a0a0;
+    --gray-800: #e0e0e0;
+    --gray-900: #f5f5f5;
+  }
+
+  body {
+    background: var(--off-white);
+    color: var(--gray-900);
+  }
+
+  .card {
+    background: #2d2d2d;
+    border-color: #3f3f3f;
+  }
+
+  .input {
+    background: #2d2d2d;
+    border-color: #3f3f3f;
+    color: var(--gray-900);
+  }
+
+  .btn-secondary {
+    background: #2d2d2d;
+    color: var(--blue);
+    border-color: var(--blue);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--gray-600);
+  }
+
+  .btn-ghost:hover {
+    background: #3f3f3f;
+    color: var(--gray-900);
+  }
+}
+
+/* Landscape orientation on mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+  body {
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  /* Reduce vertical padding in landscape */
+  .card {
+    margin: 8px;
+  }
+}
+
+/* Print styles */
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+
+  .btn,
+  [role="button"] {
+    display: none;
+  }
+}
+
 /* Animations */
 @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }

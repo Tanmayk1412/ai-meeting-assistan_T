@@ -4,7 +4,7 @@ import { useAuth } from '../lib/auth';
 import { login, register } from '../lib/api';
 import styles from '../styles/Auth.module.css';
 
-export default function AuthPage() {
+export default function AuthPage({ deferredPrompt, installPrompt }) {
   const [mode, setMode] = useState('login'); // 'login' | 'register'
   const [form, setForm] = useState({ identifier: '', username: '', phone: '', password: '' });
   const [error, setError] = useState('');

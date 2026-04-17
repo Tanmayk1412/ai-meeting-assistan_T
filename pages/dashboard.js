@@ -5,7 +5,7 @@ import { useAuth } from '../lib/auth';
 import { getMeetings, deleteMeeting } from '../lib/api';
 import styles from '../styles/Dashboard.module.css';
 
-export default function Dashboard() {
+export default function Dashboard({ deferredPrompt, installPrompt }) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [meetings, setMeetings] = useState([]);
@@ -57,7 +57,7 @@ export default function Dashboard() {
 
   return (
     <div className={styles.page}>
-      <Navbar />
+      <Navbar deferredPrompt={deferredPrompt} installPrompt={installPrompt} />
       <main className={styles.main}>
         <div className={styles.header}>
           <div>

@@ -196,7 +196,170 @@
 
 /* ── MOBILE OPTIMIZATIONS ── */
 @media (max-width: 768px) {
-  .main { padding: 16px 12px; }
+  .main {
+    padding: 16px 12px;
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    gap: 12px;
+  }
+
+  .title {
+    font-size: 22px;
+  }
+
+  .card {
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .fieldGroup {
+    gap: 6px;
+  }
+
+  .label {
+    font-size: 12px;
+  }
+
+  .placeholder {
+    padding: 40px 20px;
+  }
+
+  .placeholder h3 {
+    font-size: 16px;
+  }
+
+  .analyzingState {
+    padding: 40px 20px;
+  }
+
+  .resultCard {
+    padding: 16px;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .actions button {
+    width: 100%;
+  }
+
+  .modeTab {
+    padding: 10px;
+    font-size: 12px;
+  }
+}
+
+/* Extra small phones */
+@media (max-width: 400px) {
+  .main {
+    padding: 12px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+
+  .card {
+    padding: 12px;
+  }
+
+  .placeholder {
+    padding: 30px 16px;
+    border-radius: 8px;
+  }
+
+  .placeholderIcon {
+    font-size: 32px;
+  }
+
+  .placeholder h3 {
+    font-size: 14px;
+  }
+
+  .placeholder p {
+    font-size: 12px;
+  }
+
+  .resultTitle {
+    font-size: 12px;
+  }
+
+  .summary {
+    font-size: 13px;
+  }
+
+  .apItem {
+    padding: 10px 12px;
+  }
+
+  .apTask {
+    font-size: 12px;
+  }
+
+  .apMeta {
+    font-size: 11px;
+  }
+
+  .decisionList {
+    font-size: 13px;
+    padding-left: 14px;
+  }
+}
+
+/* Landscape mode optimizations */
+@media (max-width: 768px) and (orientation: landscape) {
+  .main {
+    padding: 12px 8px;
+  }
+
+  .card {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .placeholder {
+    padding: 20px 16px;
+  }
+
+  .analyzingState {
+    padding: 20px;
+  }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .placeholder {
+    background: #2d2d2d;
+    border-color: #3f3f3f;
+  }
+
+  .analyzingState {
+    background: #2d2d2d;
+    border-color: #3f3f3f;
+  }
+
+  .resultCard {
+    background: #2d2d2d;
+  }
+
+  .apItem {
+    background: #3f3f3f;
+  }
+}
+
+/* Print styles */
+@media print {
+  .modeTabs,
+  .actions {
+    display: none;
+  }
+}
   
   .header {
     flex-direction: column;

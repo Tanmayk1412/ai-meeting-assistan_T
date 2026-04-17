@@ -7,7 +7,7 @@ import { saveMeeting } from '../../lib/api';
 import { convertToMP3, needsConversion } from '../../lib/audioConverter';
 import styles from '../../styles/NewMeeting.module.css';
 
-export default function NewMeeting() {
+export default function NewMeeting({ deferredPrompt, installPrompt }) {
   const { user, loading } = useAuth();
   const router = useRouter();
 
@@ -341,7 +341,7 @@ export default function NewMeeting() {
           {toast}
         </div>
       )}
-      <Navbar />
+      <Navbar deferredPrompt={deferredPrompt} installPrompt={installPrompt} />
       <main className={styles.main}>
         <div className={styles.header}>
           <button className="btn btn-ghost" onClick={() => router.back()}>← Back</button>

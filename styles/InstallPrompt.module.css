@@ -1,0 +1,175 @@
+.container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  z-index: 1000;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.prompt {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  padding: 20px;
+  max-width: 400px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.content {
+  text-align: center;
+}
+
+.icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 6px;
+}
+
+.text {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-direction: column;
+}
+
+.btnInstall {
+  flex: 1;
+  padding: 12px;
+  background: #0066ff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+.btnInstall:active {
+  background: #0052cc;
+  transform: scale(0.98);
+}
+
+.btnCancel {
+  flex: 1;
+  padding: 12px;
+  background: #f3f4f6;
+  color: #4b5563;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+.btnCancel:active {
+  background: #e5e7eb;
+  transform: scale(0.98);
+}
+
+/* Mobile optimization */
+@media (max-width: 768px) {
+  .container {
+    padding: 12px;
+  }
+
+  .prompt {
+    padding: 16px;
+    gap: 14px;
+  }
+
+  .actions {
+    flex-direction: row;
+  }
+
+  .btnInstall,
+  .btnCancel {
+    flex: 1;
+  }
+}
+
+/* Extra small phones */
+@media (max-width: 400px) {
+  .prompt {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .icon {
+    font-size: 36px;
+  }
+
+  .title {
+    font-size: 14px;
+  }
+
+  .text {
+    font-size: 12px;
+  }
+
+  .btnInstall,
+  .btnCancel {
+    font-size: 13px;
+    padding: 10px;
+    min-height: 40px;
+  }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .prompt {
+    background: #2d2d2d;
+  }
+
+  .title {
+    color: #f5f5f5;
+  }
+
+  .text {
+    color: #a0a0a0;
+  }
+
+  .btnCancel {
+    background: #3f3f3f;
+    color: #e0e0e0;
+  }
+
+  .btnCancel:active {
+    background: #525252;
+  }
+}
