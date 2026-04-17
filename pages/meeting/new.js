@@ -78,7 +78,7 @@ export default function NewMeeting() {
     }
   };
 
-  // ── FIX 1: read transcribe response directly — no polling ──
+  // ── FIX 1: Direct AssemblyAI upload for large files ──
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -88,17 +88,101 @@ export default function NewMeeting() {
     setUploadState('transcribing');
 
     try {
-      const res = await fetch('/api/transcribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/octet-stream' },
-        body: file,
-      });
-      const data = await res.json();
-      if (!res.ok || data.error) throw new Error(data.error || `Server error ${res.status}`);
-      if (!data.transcript) throw new Error('Empty transcription returned');
+      const ASSEMBLYAI_KEY = process.env.NEXT_PUBLIC_ASSEMBLYAI_API_KEY;
+      if (!ASSEMBLYAI_KEY) throw new Error('AssemblyAI API key not configured');
 
-      setTranscript(data.transcript);
-      if (data.srt) setSrt(data.srt);                // ← FIX 3: store SRT from upload
+      // Step 1: Upload to AssemblyAI
+      const formData = new FormData();
+      formData.append('audio_data', file);
+
+      setUploadState('uploading');
+      const uploadRes = await fetch('https://api.assemblyai.com/v2/upload', {
+        method: 'POST',
+        headers: { 'Authorization': ASSEMBLYAI_KEY },
+        body: formData,
+      });
+
+      if (!uploadRes.ok) throw new Error(`Upload failed: ${uploadRes.status}`);
+      const uploadData = await uploadRes.json();
+      const uploadUrl = uploadData.upload_url;
+
+      // Step 2: Submit transcription
+      setUploadState('transcribing');
+      const transcribeRes = await fetch('https://api.assemblyai.com/v2/transcript', {
+        method: 'POST',
+        headers: {
+          'Authorization': ASSEMBLYAI_KEY,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ audio_url: uploadUrl }),
+      });
+
+      if (!transcribeRes.ok) throw new Error(`Transcription submit failed: ${transcribeRes.status}`);
+      const transcribeData = await transcribeRes.json();
+      const transcriptId = transcribeData.id;
+
+      // Step 3: Poll for completion
+      let transcript = null;
+      let attempts = 0;
+      const maxAttempts = 1200;
+      let pollInterval = 2000;
+
+      while (attempts < maxAttempts) {
+        const statusRes = await fetch(`https://api.assemblyai.com/v2/transcript/${transcriptId}`, {
+          method: 'GET',
+          headers: { 'Authorization': ASSEMBLYAI_KEY },
+        });
+
+        if (!statusRes.ok) throw new Error(`Status check failed: ${statusRes.status}`);
+        const statusData = await statusRes.json();
+
+        if (statusData.status === 'completed') {
+          transcript = statusData.text || '';
+          break;
+        }
+
+        if (statusData.status === 'error') {
+          throw new Error(`AssemblyAI error: ${statusData.error}`);
+        }
+
+        if (statusData.confidence !== undefined && statusData.confidence > 0.5) {
+          pollInterval = 6000;
+        }
+
+        setUploadState(`Processing: ${statusData.status}...`);
+        attempts++;
+        await new Promise(resolve => setTimeout(resolve, pollInterval));
+      }
+
+      if (!transcript) throw new Error('Transcription timed out');
+
+      // Generate SRT
+      const sentences = transcript.match(/[^.!?]+[.!?]+/g) || [transcript];
+      const avgWordsPerSec = transcript.split(/\s+/).length / Math.max(file.duration || 60, 1);
+      let srt = '';
+      let currentTime = 0;
+      let index = 1;
+
+      sentences.forEach(sentence => {
+        const words = sentence.trim().split(/\s+/).length;
+        const duration = Math.ceil(words / avgWordsPerSec);
+        const startTime = currentTime;
+        const endTime = currentTime + duration;
+
+        const timeFormat = (sec) => {
+          const h = Math.floor(sec / 3600);
+          const m = Math.floor((sec % 3600) / 60);
+          const s = sec % 60;
+          return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')},000`;
+        };
+
+        srt += `${index}\n${timeFormat(startTime)} --> ${timeFormat(endTime)}\n${sentence.trim()}\n\n`;
+        currentTime = endTime;
+        index++;
+      });
+
+      setTranscript(transcript);
+      setSrt(srt);
       setUploadState('done');
     } catch (err) {
       setError('Upload transcription failed: ' + err.message);
