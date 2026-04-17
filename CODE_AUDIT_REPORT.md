@@ -27,10 +27,11 @@
 **Risk:** Credential compromise, unauthorized API access  
 **Details:**
 ```
-NEXT_PUBLIC_ASSEMBLYAI_API_KEY=3a08a427d01e47d2be23dc1bbc61c703
-OPENROUTER_API_KEY=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
+NEXT_PUBLIC_ASSEMBLYAI_API_KEY=xxxx[REDACTED]xxxx
+OPENROUTER_API_KEY=sk-or-v1-xxxx[REDACTED]xxxx
 ```
-- Both API keys are visible in git history
+⚠️ **KEYS REMOVED FOR SECURITY** - Real keys must be rotated immediately
+- Both API keys are visible in git history (if .env.local ever committed)
 - NEXT_PUBLIC_* key is exposed to frontend (AttackSurface)
 - Private key visible in repository
 
