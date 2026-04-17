@@ -18,14 +18,30 @@ export default function Dashboard({ deferredPrompt, installPrompt }) {
   }, [user, loading]);
 
   useEffect(() => {
-    if (user) fetchMeetings();
+    if (user) {
+      // Try loading from cache first (instant display)
+      const cached = localStorage.getItem(`meetings_${user.username}`);
+      if (cached) {
+        try {
+          setMeetings(JSON.parse(cached));
+          setFetching(false);
+        } catch (e) {
+          console.error('Cache parse error:', e);
+        }
+      }
+      // Fetch fresh data in background
+      fetchMeetings();
+    }
   }, [user]);
 
   const fetchMeetings = async () => {
-    setFetching(true);
+    if (meetings.length === 0) setFetching(true); // Show loader only if no cached data
     try {
       const data = await getMeetings(user.username);
-      setMeetings(data.meetings || []);
+      const meetingsList = data.meetings || [];
+      setMeetings(meetingsList);
+      // Cache for next visit
+      localStorage.setItem(`meetings_${user.username}`, JSON.stringify(meetingsList));
     } catch (err) {
       console.error(err);
     } finally {
@@ -64,11 +80,22 @@ export default function Dashboard({ deferredPrompt, installPrompt }) {
             <h1 className={styles.title}>Meetings</h1>
             <p className={styles.subtitle}>
               {meetings.length} meeting{meetings.length !== 1 ? 's' : ''} recorded
+              {fetching && meetings.length > 0 && ' • Updating…'}
             </p>
           </div>
-          <button className="btn btn-primary" onClick={() => router.push('/meeting/new')}>
-            + New Meeting
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button 
+              className="btn btn-secondary" 
+              onClick={() => fetchMeetings()}
+              disabled={fetching}
+              title="Refresh meetings"
+            >
+              {fetching ? '⟳ Refreshing…' : '↻ Refresh'}
+            </button>
+            <button className="btn btn-primary" onClick={() => router.push('/meeting/new')}>
+              + New Meeting
+            </button>
+          </div>
         </div>
 
         <div className={styles.toolbar}>
@@ -80,7 +107,7 @@ export default function Dashboard({ deferredPrompt, installPrompt }) {
           />
         </div>
 
-        {fetching ? (
+        {fetching && meetings.length === 0 ? (
           <div className={styles.loading}>
             <span className="spinner" /> Loading meetings…
           </div>

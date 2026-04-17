@@ -522,14 +522,27 @@ function handleGetMeetings(body) {
   const authSheet = ensureAuthSheet(ss);
   const owner = resolveOwnerKey(authSheet, username);
   const sheet = getUserSheet(ss, owner);
-  const rows = sheet.getDataRange().getValues();
+
+  // Optimization: Only fetch last 50 rows instead of entire sheet
+  const lastRow = sheet.getLastRow();
+  const startRow = Math.max(2, lastRow - 49); // Row 2 is first data row
+  const numRows = lastRow - startRow + 1;
+
+  if (numRows <= 0) {
+    return ok({ meetings: [] });
+  }
+
+  // Fetch only needed range (50 meetings max)
+  const range = sheet.getRange(startRow, 1, numRows, MEETING_HEADERS.length);
+  const rows = range.getValues();
 
   const meetings = [];
-  for (let i = 1; i < rows.length; i++) {
+  for (let i = 0; i < rows.length; i++) {
     if (!rows[i][0]) continue;
     meetings.push(toMeeting(rows[i]));
   }
 
+  // Sort by newest first
   meetings.sort(function (a, b) {
     return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
   });
