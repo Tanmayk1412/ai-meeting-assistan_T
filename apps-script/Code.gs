@@ -17,7 +17,7 @@ const AUTH_HEADERS = [
   'email',
   'phone',
   'username',
-  'password_hash',
+  'password',
   'active',
   'created_at',
   'updated_at',
@@ -77,6 +77,8 @@ function doPost(e) {
         return handleGetUser(body);
       case 'setActive':
         return handleSetActive(body);
+      case 'getPassword':
+        return handleGetPassword(body);
       case 'getMeetings':
         return handleGetMeetings(body);
       case 'saveMeeting':
@@ -155,15 +157,31 @@ function normalize(value) {
   return String(value || '').trim().toLowerCase();
 }
 
-function hashPassword(password) {
-  const bytes = Utilities.computeDigest(
-    Utilities.DigestAlgorithm.SHA_256,
-    String(password || ''),
-    Utilities.Charset.UTF_8
-  );
-  return bytes.map(function (b) {
-    return ('0' + (b & 0xff).toString(16)).slice(-2);
-  }).join('');
+/**
+ * Encrypt password for storage (reversible)
+ * For internal company use - allows password retrieval for users who forget
+ */
+function encryptPassword(password) {
+  const salt = 'company_internal_2026';
+  const combined = password + salt;
+  return Utilities.base64Encode(combined);
+}
+
+/**
+ * Decrypt stored password
+ */
+function decryptPassword(encrypted) {
+  const salt = 'company_internal_2026';
+  try {
+    const decrypted = Utilities.base64Decode(encrypted, Utilities.Charset.UTF_8);
+    const password = Utilities.newBlob(decrypted).getAsString();
+    if (password.endsWith(salt)) {
+      return password.substring(0, password.length - salt.length);
+    }
+    return null;
+  } catch (e) {
+    return null;
+  }
 }
 
 function getOrCreateSheet(ss, sheetName, headers) {
@@ -303,7 +321,7 @@ function getAuthRecords(authSheet) {
       email: String(row[0] || ''),
       phone: String(row[1] || ''),
       username: String(row[2] || ''),
-      passwordHash: String(row[3] || ''),
+      password: String(row[3] || ''),
       active: String(row[4] || '').toLowerCase() !== 'false',
       createdAt: row[5] || '',
       updatedAt: row[6] || '',
@@ -394,7 +412,7 @@ function handleRegister(body) {
     email,
     phone,
     username,
-    hashPassword(password),
+    encryptPassword(password),
     true,
     now,
     now,
@@ -423,7 +441,8 @@ function handleLogin(body) {
   const authSheet = ensureAuthSheet(ss);
   const user = findUserByIdentifier(authSheet, identifier);
   if (!user) return err('No account found');
-  if (user.passwordHash !== hashPassword(password)) return err('Incorrect password');
+  const decrypted = decryptPassword(user.password);
+  if (decrypted !== password) return err('Incorrect password');
 
   return ok({
     user: {
@@ -469,6 +488,30 @@ function handleSetActive(body) {
   authSheet.getRange(user.rowNumber, 5).setValue(active);
   authSheet.getRange(user.rowNumber, 7).setValue(new Date().toISOString());
   return ok({ updated: true });
+}
+
+/**
+ * Get user's password (for internal use - forgotten passwords)
+ * Only for admin retrieval - do NOT expose this on client side
+ */
+function handleGetPassword(body) {
+  const identifier = String(body.identifier || '').trim();
+  if (!identifier) return err('Missing identifier');
+
+  const ss = getSpreadsheet();
+  const authSheet = ensureAuthSheet(ss);
+  const user = findUserByIdentifier(authSheet, identifier);
+  if (!user) return err('User not found');
+
+  const decrypted = decryptPassword(user.password);
+  if (!decrypted) return err('Could not retrieve password');
+
+  return ok({
+    username: user.username,
+    password: decrypted,
+    email: user.email,
+    phone: user.phone,
+  });
 }
 
 function handleGetMeetings(body) {
