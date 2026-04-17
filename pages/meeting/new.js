@@ -108,6 +108,12 @@ export default function NewMeeting() {
 
       // Step 2: Submit transcription
       setUploadState('transcribing');
+      
+      console.log('🔍 DEBUG - AssemblyAI Setup:');
+      console.log('API Key exists:', !!ASSEMBLYAI_KEY);
+      console.log('API Key length:', ASSEMBLYAI_KEY?.length);
+      console.log('Upload URL:', uploadUrl);
+      
       const transcribeRes = await fetch('https://api.assemblyai.com/v2/transcript', {
         method: 'POST',
         headers: {
@@ -117,7 +123,11 @@ export default function NewMeeting() {
         body: JSON.stringify({ audio_url: uploadUrl }),
       });
 
-      if (!transcribeRes.ok) throw new Error(`Transcription submit failed: ${transcribeRes.status}`);
+      if (!transcribeRes.ok) {
+        const errorText = await transcribeRes.text();
+        console.error('❌ AssemblyAI Error Response:', errorText);
+        throw new Error(`Transcription submit failed: ${transcribeRes.status} - ${errorText}`);
+      }
       const transcribeData = await transcribeRes.json();
       const transcriptId = transcribeData.id;
 
