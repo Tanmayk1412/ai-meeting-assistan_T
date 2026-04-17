@@ -27,7 +27,15 @@ export default function AuthPage({ deferredPrompt, installPrompt }) {
           email: data.user.email,
           phone: data.user.phone,
           username: data.user.username,
+          isAdmin: data.user.isAdmin || false,
         });
+        // Redirect admins to admin panel
+        if (data.user.isAdmin) {
+          router.push('/admin');
+        } else {
+          router.push('/dashboard');
+        }
+        return;
       } else {
         // register — email or phone required, both optional but at least one
         if (!form.identifier) {
@@ -46,9 +54,11 @@ export default function AuthPage({ deferredPrompt, installPrompt }) {
           email: isEmail ? form.identifier : '',
           phone: isEmail ? '' : form.identifier,
           username: data.username,
+          isAdmin: false,
         });
+        router.push('/dashboard');
+        return;
       }
-      router.push('/dashboard');
     } catch (err) {
       setError(err.message);
     } finally {

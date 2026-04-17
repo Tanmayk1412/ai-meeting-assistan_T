@@ -84,6 +84,15 @@ export default function Dashboard({ deferredPrompt, installPrompt }) {
             </p>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
+            {user && user.isAdmin && (
+              <button 
+                className="btn btn-secondary" 
+                onClick={() => router.push('/admin')}
+                title="Admin panel"
+              >
+                ⚙️ Admin Panel
+              </button>
+            )}
             <button 
               className="btn btn-secondary" 
               onClick={() => fetchMeetings()}

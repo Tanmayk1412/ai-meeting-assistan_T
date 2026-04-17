@@ -18,6 +18,7 @@ const AUTH_HEADERS = [
   'phone',
   'username',
   'password',
+  'is_admin',
   'active',
   'created_at',
   'updated_at',
@@ -79,6 +80,10 @@ function doPost(e) {
         return handleSetActive(body);
       case 'getPassword':
         return handleGetPassword(body);
+      case 'getAllUsers':
+        return handleGetAllUsers(body);
+      case 'getAllMeetings':
+        return handleGetAllMeetings(body);
       case 'getMeetings':
         return handleGetMeetings(body);
       case 'saveMeeting':
@@ -322,9 +327,10 @@ function getAuthRecords(authSheet) {
       phone: String(row[1] || ''),
       username: String(row[2] || ''),
       password: String(row[3] || ''),
-      active: String(row[4] || '').toLowerCase() !== 'false',
-      createdAt: row[5] || '',
-      updatedAt: row[6] || '',
+      isAdmin: String(row[4] || '').toLowerCase() === 'true',
+      active: String(row[5] || '').toLowerCase() !== 'false',
+      createdAt: row[6] || '',
+      updatedAt: row[7] || '',
     });
   }
   return out;
@@ -413,6 +419,7 @@ function handleRegister(body) {
     phone,
     username,
     encryptPassword(password),
+    false,
     true,
     now,
     now,
@@ -449,6 +456,7 @@ function handleLogin(body) {
       email: user.email,
       phone: user.phone,
       username: user.username,
+      isAdmin: user.isAdmin,
       active: user.active,
       createdAt: user.createdAt,
     },
@@ -714,4 +722,77 @@ function handlePipelineLog(body) {
   ]);
 
   return ok({ logged: true });
+}
+
+/**
+ * Admin: Get all users
+ * Returns list of all users with basic info
+ */
+function handleGetAllUsers(body) {
+  const adminUser = String(body.adminUsername || '').trim();
+  if (!adminUser) return err('Missing admin username');
+
+  const ss = getSpreadsheet();
+  const authSheet = ensureAuthSheet(ss);
+  
+  // Check if requestor is admin
+  const admin = findUserByIdentifier(authSheet, adminUser);
+  if (!admin || !admin.isAdmin) return err('Access denied: Admin only');
+
+  const rows = getAuthRecords(authSheet);
+  const users = [];
+  
+  for (let i = 0; i < rows.length; i++) {
+    const u = rows[i];
+    users.push({
+      email: u.email,
+      phone: u.phone,
+      username: u.username,
+      isAdmin: u.isAdmin,
+      active: u.active,
+      createdAt: u.createdAt,
+    });
+  }
+
+  return ok({ users: users });
+}
+
+/**
+ * Admin: Get all meetings from all users
+ * Returns all meetings across entire system
+ */
+function handleGetAllMeetings(body) {
+  const adminUser = String(body.adminUsername || '').trim();
+  if (!adminUser) return err('Missing admin username');
+
+  const ss = getSpreadsheet();
+  const authSheet = ensureAuthSheet(ss);
+  
+  // Check if requestor is admin
+  const admin = findUserByIdentifier(authSheet, adminUser);
+  if (!admin || !admin.isAdmin) return err('Access denied: Admin only');
+
+  const rows = getAuthRecords(authSheet);
+  const allMeetings = [];
+  
+  // Iterate through each user's sheet
+  for (let i = 0; i < rows.length; i++) {
+    const u = rows[i];
+    const userSheet = getUserSheet(ss, u.username);
+    const data = userSheet.getDataRange().getValues();
+    
+    for (let j = 1; j < data.length; j++) {
+      if (!data[j][0]) continue;
+      const meeting = toMeeting(data[j]);
+      meeting.owner = u.username;
+      allMeetings.push(meeting);
+    }
+  }
+
+  // Sort by newest first
+  allMeetings.sort(function (a, b) {
+    return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+  });
+
+  return ok({ meetings: allMeetings });
 }
