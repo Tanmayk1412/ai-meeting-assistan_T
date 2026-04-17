@@ -46,6 +46,7 @@ async function uploadToAssemblyAI(audioBlob, onProgress) {
       },
       body: JSON.stringify({
         audio_url: uploadUrl,
+        speech_model: 'best',  // Use the best available model
       }),
     });
 

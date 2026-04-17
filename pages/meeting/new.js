@@ -120,7 +120,10 @@ export default function NewMeeting() {
           'Authorization': ASSEMBLYAI_KEY,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ audio_url: uploadUrl }),
+        body: JSON.stringify({ 
+          audio_url: uploadUrl,
+          speech_model: 'best',  // Use the best available model
+        }),
       });
 
       if (!transcribeRes.ok) {
