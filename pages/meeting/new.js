@@ -135,7 +135,19 @@ export default function NewMeeting() {
 
       // Step 1: Upload to AssemblyAI
       const formData = new FormData();
-      formData.append('audio_data', file);
+      
+      // ── FIX: Force correct MIME type for WAV files ──
+      let audioBlob = file;
+      if (file.name.endsWith('.wav') && file.type !== 'audio/wav') {
+        console.log('⚠️ Fixing WAV MIME type...');
+        audioBlob = new Blob([file], { type: 'audio/wav' });
+      }
+      if (file.name.endsWith('.mp3') && file.type !== 'audio/mpeg') {
+        console.log('⚠️ Fixing MP3 MIME type...');
+        audioBlob = new Blob([file], { type: 'audio/mpeg' });
+      }
+      
+      formData.append('audio_data', audioBlob, file.name);
 
       setUploadState('uploading');
       setError('📤 Uploading audio file... This may take a few minutes for large files.');
