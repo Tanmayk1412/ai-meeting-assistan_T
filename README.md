@@ -48,7 +48,50 @@ npm start
 5. **Save**: Download transcript + SRT subtitles
 6. **View**: Check all meetings in dashboard
 
-## 📦 Deployment
+## � Admin Panel
+
+### Login as Admin
+- Go to `/` (login page)
+- Login with admin credentials
+- Admin users are **automatically redirected** to `/admin`
+
+### Admin Features
+- **View all users** - See complete user list with email, phone, admin status
+- **View all meetings** - Browse every meeting from all users
+- **Retrieve passwords** - One-click password retrieval for users who forgot theirs
+- **Copy to clipboard** - Easy password sharing with users
+
+### Setup Admin User
+
+To make a user an admin:
+
+1. Open your **Google Sheet** (from SHEET_ID in Code.gs)
+2. Go to the **AUTH** sheet
+3. Find the user row you want to make admin
+4. Set the `is_admin` column to `true` (or TRUE)
+5. User will have admin access on **next login**
+
+### Example Admin Workflow
+
+**User forgets password:**
+1. User calls/emails you
+2. You login to the app with admin account
+3. Go to Admin Panel → Users tab
+4. Find user → Click "Get Password"
+5. Modal shows encrypted password
+6. Click "Copy to Clipboard"
+7. Send password to user → They can login
+
+### Default Admin Setup
+
+To create your first admin user:
+
+1. Register a new user account normally (e.g., username: `admin`)
+2. Edit the **AUTH sheet** in your Google Sheet
+3. Set `is_admin` column to `true` for that user
+4. Log out and log back in → Should see Admin Panel
+
+## �📦 Deployment
 
 Deployed on **Vercel** with GitHub auto-deploy.
 
