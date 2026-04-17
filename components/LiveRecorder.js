@@ -32,7 +32,6 @@ async function uploadToAssemblyAI(audioBlob, onProgress) {
       headers: {
         'Authorization': ASSEMBLYAI_KEY,
         'Content-Type': audioBlob.type || 'audio/webm',  // Explicit content type
-        'Transfer-Encoding': 'chunked',
       },
       body: audioBlob,  // Send blob directly, NOT FormData
     });
@@ -207,8 +206,24 @@ export default function LiveRecorder({ onTranscriptUpdate, onComplete }) {
     recorder.onstop = async () => {
       setState('transcribing');
       setUploadProgress('Uploading to AssemblyAI...');
+      
+      if (chunksRef.current.length === 0) {
+        setError('❌ No audio recorded. Please try again.');
+        setState('idle');
+        return;
+      }
+      
       const mime = getSupportedMimeType() || 'audio/webm';
       const blob = new Blob(chunksRef.current, { type: mime });
+
+      // Validate blob before sending
+      if (blob.size === 0) {
+        setError('❌ Recording is empty. Please try again.');
+        setState('idle');
+        return;
+      }
+
+      console.log(`✅ Recording blob created: ${(blob.size / 1024 / 1024).toFixed(2)} MB | chunks: ${chunksRef.current.length}`);
 
       try {
         const result = await uploadToAssemblyAI(blob, (msg) => setUploadProgress(msg));

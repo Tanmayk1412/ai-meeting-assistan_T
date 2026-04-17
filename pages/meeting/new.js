@@ -188,7 +188,6 @@ export default function NewMeeting() {
         headers: {
           'Authorization': ASSEMBLYAI_KEY,
           'Content-Type': 'audio/mpeg',  // Explicit content type
-          'Transfer-Encoding': 'chunked',
         },
         body: audioBlob,  // Send blob directly, NOT FormData
       });
