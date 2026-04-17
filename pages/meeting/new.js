@@ -119,7 +119,7 @@ export default function NewMeeting() {
         },
         body: JSON.stringify({ 
           audio_url: uploadUrl,
-          speech_models: ['best'],  // NEW: Use speech_models (plural) with 'best' model
+          speech_models: ['universal-2'],  // Use valid AssemblyAI model
         }),
       });
 
