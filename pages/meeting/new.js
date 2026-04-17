@@ -100,11 +100,38 @@ export default function NewMeeting() {
     setError('');
     setTranscript('');
     setSrt('');
+
+    // ── FILE VALIDATION ──
+    const MAX_FILE_SIZE = 1024 * 1024 * 500; // 500MB
+    const SUPPORTED_TYPES = [
+      'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/webm', 'audio/ogg', 
+      'audio/aac', 'audio/m4a', 'audio/flac', 'audio/wma',
+      'video/mp4', 'video/quicktime', 'video/x-msvideo'
+    ];
+
+    // Check file size
+    if (file.size > MAX_FILE_SIZE) {
+      setError(`❌ File too large! Max 500MB. Your file: ${(file.size / 1024 / 1024).toFixed(1)}MB`);
+      return;
+    }
+
+    // Check file type
+    if (!SUPPORTED_TYPES.includes(file.type) && !file.name.match(/\.(mp3|wav|webm|ogg|aac|m4a|flac|wma|mp4|mov|avi)$/i)) {
+      setError(`❌ Unsupported file format. File type: ${file.type || 'unknown'}. Supported: MP3, WAV, WebM, Ogg, AAC, M4A, FLAC, WMA, MP4, MOV, AVI`);
+      return;
+    }
+
     setUploadState('transcribing');
 
     try {
       const ASSEMBLYAI_KEY = process.env.NEXT_PUBLIC_ASSEMBLYAI_API_KEY;
       if (!ASSEMBLYAI_KEY) throw new Error('AssemblyAI API key not configured');
+
+      console.log('📁 File validation passed:', {
+        name: file.name,
+        size: (file.size / 1024 / 1024).toFixed(2) + 'MB',
+        type: file.type,
+      });
 
       // Step 1: Upload to AssemblyAI
       const formData = new FormData();
