@@ -149,13 +149,21 @@ export default function NewMeeting() {
       // ── AUDIO CONVERSION & COMPRESSION (if needed) ──
       let audioToUpload = file;
       if (needsConversion(file)) {
-        setError('🔄 Converting & compressing audio to MP3...');
-        audioToUpload = await convertToMP3(file, (msg) => {
-          setError('🔄 ' + msg);
-        });
-        const originalSize = (file.size / 1024 / 1024).toFixed(2);
-        const compressedSize = (audioToUpload.size / 1024 / 1024).toFixed(2);
-        console.log(`✅ Compressed: ${originalSize}MB → ${compressedSize}MB (${Math.round((1 - audioToUpload.size / file.size) * 100)}% reduction)`);
+        try {
+          setError('🔄 Converting & compressing audio to MP3...');
+          audioToUpload = await convertToMP3(file, (msg) => {
+            setError('🔄 ' + msg);
+          });
+          const originalSize = (file.size / 1024 / 1024).toFixed(2);
+          const compressedSize = (audioToUpload.size / 1024 / 1024).toFixed(2);
+          const reduction = Math.round((1 - audioToUpload.size / file.size) * 100);
+          console.log(`✅ Compressed: ${originalSize}MB → ${compressedSize}MB (${reduction}% reduction)`);
+        } catch (convErr) {
+          console.error('❌ Conversion failed, attempting with original file:', convErr);
+          setError('⚠️ Conversion failed, trying original file: ' + convErr.message);
+          // Continue with original file anyway
+          audioToUpload = file;
+        }
       }
 
       // Step 1: Upload to AssemblyAI
