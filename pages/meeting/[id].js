@@ -30,7 +30,7 @@ export default function MeetingDetail() {
   const fetchMeeting = async () => {
     setFetching(true);
     try {
-      const data = await getMeetings(user.email);
+      const data = await getMeetings(user.username);
       const found = (data.meetings || []).find(m => m.id === id);
       if (!found) { router.push('/dashboard'); return; }
       setMeeting(found);
@@ -53,7 +53,7 @@ export default function MeetingDetail() {
     setSaving(true);
     setError('');
     try {
-      await updateMeeting(user.email, id, { ...editData, updatedAt: new Date().toISOString() });
+      await updateMeeting(user.username, id, { ...editData, updatedAt: new Date().toISOString() });
       setMeeting(m => ({ ...m, ...editData }));
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
