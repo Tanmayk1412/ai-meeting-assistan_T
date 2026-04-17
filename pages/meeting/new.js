@@ -167,39 +167,41 @@ export default function NewMeeting() {
       }
 
       // Step 1: Upload to AssemblyAI
-      const formData = new FormData();
-      
-      // Determine correct MIME type
       let audioBlob = audioToUpload;
-      let mimeType = 'audio/mpeg'; // Default to MP3 (from conversion)
       
-      // If file wasn't converted (only MP3 files skip conversion), use detected format
-      if (audioToUpload === file) {
-        const mimeTypeMap = {
-          'MP3': 'audio/mpeg',
-          'WebM': 'audio/webm',
-          'OGG': 'audio/ogg',
-        };
-        mimeType = mimeTypeMap[detectedFormat] || audioToUpload.type || 'audio/mpeg';
-      }
-      
-      audioBlob = new Blob([audioToUpload], { type: mimeType });
-      
-      console.log('Sending to AssemblyAI with MIME type:', mimeType, '| File name:', audioToUpload.name);
-      
-      formData.append('audio_data', audioBlob, audioToUpload.name);
+      // Validate blob before sending - check magic bytes
+      const arrayBuffer = await audioBlob.arrayBuffer();
+      const header = new Uint8Array(arrayBuffer.slice(0, 12));
+      const headerHex = Array.from(header).map(b => b.toString(16).padStart(2, '0')).join(' ');
+      console.log('📊 Upload blob info:');
+      console.log('  • Header bytes:', headerHex);
+      console.log('  • Size:', (audioBlob.size / 1024 / 1024).toFixed(2), 'MB');
+      console.log('  • Type:', audioBlob.type);
 
       setUploadState('uploading');
       setError('📤 Uploading audio file... This may take a few minutes for large files.');
+      
+      // Send blob directly as request body (not FormData)
+      // AssemblyAI sniffs magic bytes, so we need the raw binary data
       const uploadRes = await fetch('https://api.assemblyai.com/v2/upload', {
         method: 'POST',
-        headers: { 'Authorization': ASSEMBLYAI_KEY },
-        body: formData,
+        headers: {
+          'Authorization': ASSEMBLYAI_KEY,
+          'Content-Type': 'audio/mpeg',  // Explicit content type
+          'Transfer-Encoding': 'chunked',
+        },
+        body: audioBlob,  // Send blob directly, NOT FormData
       });
 
-      if (!uploadRes.ok) throw new Error(`Upload failed: ${uploadRes.status}`);
+      if (!uploadRes.ok) {
+        const errData = await uploadRes.text();
+        console.error('❌ Upload failed:', uploadRes.status, errData);
+        throw new Error(`Upload failed: ${uploadRes.status} - ${errData}`);
+      }
+      
       const uploadData = await uploadRes.json();
       const uploadUrl = uploadData.upload_url;
+      console.log('✅ Upload successful:', uploadUrl);
 
       // Step 2: Submit transcription
       setUploadState('transcribing');
