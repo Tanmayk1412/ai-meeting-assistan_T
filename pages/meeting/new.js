@@ -20,10 +20,19 @@ export default function NewMeeting() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [uploadState, setUploadState] = useState('idle');
+  const [toast, setToast] = useState('');  // Auto-dismissing toast notification
 
   useEffect(() => {
     if (!loading && !user) router.push('/');
   }, [user, loading]);
+
+  // Auto-dismiss toast after 2 seconds
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(''), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   const analyzeTranscript = async () => {
     if (!transcript.trim()) return;
@@ -75,8 +84,8 @@ export default function NewMeeting() {
       console.log('💾 Meeting object:', meeting);
       await saveMeeting(user.username, meeting);
       console.log('✅ Meeting saved successfully!');
-      alert('✅ Meeting saved successfully!');
-      router.push(`/meeting/${meeting.id}`);
+      setToast('✅ Meeting saved successfully!');  // Auto-dismiss after 2 sec
+      setTimeout(() => router.push(`/meeting/${meeting.id}`), 1500);  // Redirect after toast shows
     } catch (err) {
       console.error('❌ Save error:', err);
       setError('Save failed: ' + err.message);
@@ -234,6 +243,24 @@ export default function NewMeeting() {
 
   return (
     <div className={styles.page}>
+      {/* Auto-dismissing toast notification */}
+      {toast && (
+        <div style={{
+          position: 'fixed',
+          top: 20,
+          right: 20,
+          background: '#10b981',
+          color: 'white',
+          padding: '12px 24px',
+          borderRadius: 8,
+          zIndex: 9999,
+          animation: 'slideInRight 0.3s ease-out, slideOutRight 0.3s ease-out 1.7s',
+          fontSize: 14,
+          fontWeight: 500,
+        }}>
+          {toast}
+        </div>
+      )}
       <Navbar />
       <main className={styles.main}>
         <div className={styles.header}>

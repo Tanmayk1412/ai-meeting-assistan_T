@@ -193,3 +193,169 @@
   .layout { grid-template-columns: 1fr; }
   .main { padding: 20px 16px; }
 }
+
+/* ── MOBILE OPTIMIZATIONS ── */
+@media (max-width: 768px) {
+  .main { padding: 16px 12px; }
+  
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .title { font-size: 20px; }
+
+  .layout { gap: 16px; }
+
+  .card { 
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .modeTab { 
+    padding: 10px 6px;
+    font-size: 12px;
+  }
+
+  .fieldGroup { gap: 6px; }
+
+  .label { font-size: 12px; }
+
+  .actions { 
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .actions button { width: 100%; }
+
+  .placeholder { 
+    padding: 40px 20px;
+  }
+
+  .placeholderIcon { font-size: 28px; }
+  
+  .placeholder h3 { font-size: 16px; }
+  
+  .placeholder p { font-size: 13px; }
+
+  .analyzingState {
+    padding: 40px 20px;
+  }
+
+  .resultCard { 
+    padding: 16px;
+  }
+
+  .resultTitle { 
+    font-size: 12px;
+    margin-bottom: 10px;
+  }
+
+  .summary { 
+    font-size: 13px;
+  }
+
+  .apHeader {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .apTask { font-size: 12px; }
+
+  .apMeta { 
+    gap: 8px;
+    font-size: 11px;
+  }
+
+  .decisionList { 
+    font-size: 13px;
+    padding-left: 16px;
+  }
+
+  input, textarea {
+    font-size: 16px !important; /* Prevent zoom on iOS */
+  }
+}
+
+/* ── SMALL PHONES (< 640px) ── */
+@media (max-width: 640px) {
+  .main { padding: 12px 8px; }
+
+  .header {
+    margin-bottom: 16px;
+  }
+
+  .title { font-size: 18px; }
+
+  .card { 
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .modeTab { 
+    padding: 8px 4px;
+    font-size: 11px;
+  }
+
+  .error {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .placeholder { 
+    padding: 30px 16px;
+  }
+
+  .placeholderIcon { 
+    font-size: 24px;
+    margin-bottom: 12px;
+  }
+  
+  .placeholder h3 { 
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+  
+  .placeholder p { font-size: 12px; }
+
+  .analyzingState {
+    padding: 30px 16px;
+  }
+
+  .resultCard { 
+    padding: 12px;
+  }
+
+  .resultTitle { 
+    font-size: 11px;
+    margin-bottom: 8px;
+  }
+
+  .summary { 
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .apItem {
+    padding: 10px 12px;
+    border-left-width: 2px;
+  }
+
+  .apTask { 
+    font-size: 11px;
+  }
+
+  .apMeta { 
+    gap: 6px;
+    font-size: 10px;
+    flex-wrap: wrap;
+  }
+
+  .decisionList { 
+    font-size: 12px;
+    padding-left: 14px;
+    gap: 6px;
+  }
+}
