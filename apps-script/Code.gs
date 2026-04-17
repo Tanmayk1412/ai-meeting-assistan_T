@@ -298,7 +298,34 @@ function applyFormats(sheet, sheetName) {
 }
 
 function ensureAuthSheet(ss) {
-  return getOrCreateSheet(ss, 'AUTH', AUTH_HEADERS);
+  const sheet = getOrCreateSheet(ss, 'AUTH', AUTH_HEADERS);
+  ensureDefaultAdmin(sheet);
+  return sheet;
+}
+
+function ensureDefaultAdmin(authSheet) {
+  // Check if default admin exists
+  const adminUsername = 'AHL_meet';
+  const rows = getAuthRecords(authSheet);
+  
+  for (let i = 0; i < rows.length; i++) {
+    if (rows[i].username === adminUsername) {
+      return; // Admin already exists
+    }
+  }
+  
+  // Admin doesn't exist, create it
+  const now = new Date().toISOString();
+  authSheet.appendRow([
+    'admin@ahl.local',  // email
+    '0000000000',       // phone
+    adminUsername,       // username: AHL_meet
+    encryptPassword('AHL@123'),  // password: AHL@123 (encrypted)
+    true,                // is_admin: true
+    true,                // active: true
+    now,                 // created_at
+    now,                 // updated_at
+  ]);
 }
 
 function ensureLogsSheet(ss) {
