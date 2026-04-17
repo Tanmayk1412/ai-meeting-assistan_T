@@ -3,9 +3,16 @@ import styles from '../styles/LiveRecorder.module.css';
 
 function getSupportedMimeType() {
   const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/ogg'];
+  console.log('🔍 Checking supported MIME types...');
   for (const type of types) {
-    if (MediaRecorder.isTypeSupported(type)) return type;
+    const supported = MediaRecorder.isTypeSupported(type);
+    console.log(`  ${supported ? '✅' : '❌'} ${type}`);
+    if (supported) {
+      console.log(`✅ Using MIME type: ${type}`);
+      return type;
+    }
   }
+  console.warn('⚠️ No MIME type supported! Falling back to empty string');
   return '';
 }
 
@@ -27,6 +34,12 @@ async function uploadToAssemblyAI(audioBlob, onProgress) {
   let uploadUrl;
   try {
     // Send blob directly as body (not FormData) - AssemblyAI sniffs magic bytes
+    console.log('📤 Starting upload to AssemblyAI...');
+    console.log(`  Blob details:
+    • Size: ${(audioBlob.size / 1024 / 1024).toFixed(2)} MB
+    • Type: ${audioBlob.type || 'undefined (browser will set)'}
+    • Headers will include: Content-Type: ${audioBlob.type || 'audio/webm'}`);
+    
     const uploadRes = await fetch('https://api.assemblyai.com/v2/upload', {
       method: 'POST',
       headers: {
@@ -36,6 +49,8 @@ async function uploadToAssemblyAI(audioBlob, onProgress) {
       body: audioBlob,  // Send blob directly, NOT FormData
     });
 
+    console.log(`📥 Upload response status: ${uploadRes.status}`);
+    
     if (!uploadRes.ok) {
       const errData = await uploadRes.text();
       console.error('❌ Upload failed:', uploadRes.status, errData);
@@ -46,6 +61,7 @@ async function uploadToAssemblyAI(audioBlob, onProgress) {
     uploadUrl = uploadData.upload_url;
     console.log('✅ Upload successful:', uploadUrl);
   } catch (err) {
+    console.error('❌ Upload error:', err);
     throw new Error(`Failed to upload audio to AssemblyAI: ${err.message}`);
   }
 
@@ -198,32 +214,83 @@ export default function LiveRecorder({ onTranscriptUpdate, onComplete }) {
     const mimeType = getSupportedMimeType();
     const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
     mediaRecorderRef.current = recorder;
+    
+    console.log('🎙️ MediaRecorder created:');
+    console.log(`  MIME type: ${recorder.mimeType || 'default (browser chose)'}`);
+    console.log(`  State: ${recorder.state}`);
+    console.log(`  Audio tracks: ${stream.getAudioTracks().length}`);
+    stream.getAudioTracks().forEach((track, i) => {
+      console.log(`    Track ${i}: ${track.label} | enabled: ${track.enabled} | readyState: ${track.readyState}`);
+    });
 
     recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) chunksRef.current.push(e.data);
+      console.log(`📦 Data chunk received: ${(e.data.size / 1024).toFixed(2)} KB | type: ${e.data.type}`);
+      if (e.data.size > 0) {
+        chunksRef.current.push(e.data);
+        console.log(`✅ Chunk added to buffer (total chunks: ${chunksRef.current.length})`);
+      } else {
+        console.warn('⚠️ Empty chunk received!');
+      }
+    };
+    
+    recorder.onerror = (e) => {
+      console.error('❌ MediaRecorder error:', e);
+      console.error('Error type:', e.error);
+      setError(`❌ Recording error: ${e.error}`);
     };
 
     recorder.onstop = async () => {
+      console.log('🛑 Recording stopped');
       setState('transcribing');
       setUploadProgress('Uploading to AssemblyAI...');
       
       if (chunksRef.current.length === 0) {
-        setError('❌ No audio recorded. Please try again.');
+        const err = '❌ No audio recorded. Please try again.';
+        console.error(err);
+        setError(err);
         setState('idle');
         return;
       }
       
       const mime = getSupportedMimeType() || 'audio/webm';
+      console.log(`📝 Creating blob: mime=${mime}, chunks=${chunksRef.current.length}`);
+      
+      // Log each chunk
+      chunksRef.current.forEach((chunk, i) => {
+        console.log(`  Chunk ${i}: ${(chunk.size / 1024).toFixed(2)} KB | ${chunk.type}`);
+      });
+      
       const blob = new Blob(chunksRef.current, { type: mime });
 
       // Validate blob before sending
       if (blob.size === 0) {
-        setError('❌ Recording is empty. Please try again.');
+        const err = '❌ Recording is empty (0 bytes). Microphone may not be working.';
+        console.error(err);
+        setError(err);
         setState('idle');
         return;
       }
 
       console.log(`✅ Recording blob created: ${(blob.size / 1024 / 1024).toFixed(2)} MB | chunks: ${chunksRef.current.length}`);
+      
+      // Check first 32 bytes for WebM signature
+      const header = await blob.slice(0, 32).arrayBuffer();
+      const headerView = new Uint8Array(header);
+      const headerHex = Array.from(headerView.slice(0, 12))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join(' ');
+      console.log(`📊 WebM header (first 12 bytes): [${headerHex}]`);
+      
+      // Verify WebM EBML signature: 1a 45 df a3
+      if (!(headerView[0] === 0x1a && headerView[1] === 0x45 && headerView[2] === 0xdf && headerView[3] === 0xa3)) {
+        console.warn('⚠️ WARNING: Blob does NOT start with WebM EBML signature!');
+        console.warn('First 4 bytes should be: 1a 45 df a3');
+        console.warn('Got:', Array.from(headerView.slice(0, 4))
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join(' '));
+      } else {
+        console.log('✅ Valid WebM EBML signature found!');
+      }
 
       try {
         const result = await uploadToAssemblyAI(blob, (msg) => setUploadProgress(msg));
