@@ -4,6 +4,7 @@ import Navbar from '../../components/Navbar';
 import LiveRecorder from '../../components/LiveRecorder';
 import { useAuth } from '../../lib/auth';
 import { saveMeeting } from '../../lib/api';
+import { convertToMP3, needsConversion } from '../../lib/audioConverter';
 import styles from '../../styles/NewMeeting.module.css';
 
 export default function NewMeeting() {
@@ -101,23 +102,41 @@ export default function NewMeeting() {
     setTranscript('');
     setSrt('');
 
+    // ── DETAILED FILE DEBUGGING ──
+    console.log('=== FILE UPLOAD DEBUG ===');
+    console.log('File name:', file.name);
+    console.log('File size:', file.size, 'bytes', `(${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+    console.log('File type (browser detected):', file.type);
+    console.log('File lastModified:', new Date(file.lastModified).toISOString());
+    
+    // Check file extension
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    console.log('File extension:', extension);
+    
+    // Try to read file header (magic bytes)
+    const headerBuffer = await file.slice(0, 12).arrayBuffer();
+    const headerView = new Uint8Array(headerBuffer);
+    const headerHex = Array.from(headerView).map(b => b.toString(16).padStart(2, '0')).join(' ');
+    console.log('File header (hex):', headerHex);
+    
+    // Detect real format from magic bytes
+    let detectedFormat = 'unknown';
+    if (headerHex.startsWith('ff fb') || headerHex.startsWith('ff fa')) detectedFormat = 'MP3';
+    if (headerHex.startsWith('52 49 46 46')) detectedFormat = 'WAV or similar (RIFF)';
+    if (headerHex.startsWith('ff f1') || headerHex.startsWith('ff f9')) detectedFormat = 'AAC';
+    if (headerHex.startsWith('4f 67 67 53')) detectedFormat = 'OGG';
+    if (headerHex.startsWith('1a 45 df a3')) detectedFormat = 'WebM';
+    if (headerHex.startsWith('49 44 33')) detectedFormat = 'MP3 with ID3';
+    
+    console.log('Real format (from magic bytes):', detectedFormat);
+    console.log('=== END DEBUG ===\n');
+
     // ── FILE VALIDATION ──
     const MAX_FILE_SIZE = 1024 * 1024 * 500; // 500MB
-    const SUPPORTED_TYPES = [
-      'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/webm', 'audio/ogg', 
-      'audio/aac', 'audio/m4a', 'audio/flac', 'audio/wma',
-      'video/mp4', 'video/quicktime', 'video/x-msvideo'
-    ];
 
     // Check file size
     if (file.size > MAX_FILE_SIZE) {
       setError(`❌ File too large! Max 500MB. Your file: ${(file.size / 1024 / 1024).toFixed(1)}MB`);
-      return;
-    }
-
-    // Check file type
-    if (!SUPPORTED_TYPES.includes(file.type) && !file.name.match(/\.(mp3|wav|webm|ogg|aac|m4a|flac|wma|mp4|mov|avi)$/i)) {
-      setError(`❌ Unsupported file format. File type: ${file.type || 'unknown'}. Supported: MP3, WAV, WebM, Ogg, AAC, M4A, FLAC, WMA, MP4, MOV, AVI`);
       return;
     }
 
@@ -127,27 +146,37 @@ export default function NewMeeting() {
       const ASSEMBLYAI_KEY = process.env.NEXT_PUBLIC_ASSEMBLYAI_API_KEY;
       if (!ASSEMBLYAI_KEY) throw new Error('AssemblyAI API key not configured');
 
-      console.log('📁 File validation passed:', {
-        name: file.name,
-        size: (file.size / 1024 / 1024).toFixed(2) + 'MB',
-        type: file.type,
-      });
+      // ── AUDIO CONVERSION & COMPRESSION (if needed) ──
+      let audioToUpload = file;
+      if (needsConversion(file)) {
+        setError('🔄 Converting & compressing audio to MP3...');
+        audioToUpload = await convertToMP3(file, (msg) => {
+          setError('🔄 ' + msg);
+        });
+        const originalSize = (file.size / 1024 / 1024).toFixed(2);
+        const compressedSize = (audioToUpload.size / 1024 / 1024).toFixed(2);
+        console.log(`✅ Compressed: ${originalSize}MB → ${compressedSize}MB (${Math.round((1 - audioToUpload.size / file.size) * 100)}% reduction)`);
+      }
 
       // Step 1: Upload to AssemblyAI
       const formData = new FormData();
       
-      // ── FIX: Force correct MIME type for WAV files ──
-      let audioBlob = file;
-      if (file.name.endsWith('.wav') && file.type !== 'audio/wav') {
-        console.log('⚠️ Fixing WAV MIME type...');
-        audioBlob = new Blob([file], { type: 'audio/wav' });
-      }
-      if (file.name.endsWith('.mp3') && file.type !== 'audio/mpeg') {
-        console.log('⚠️ Fixing MP3 MIME type...');
-        audioBlob = new Blob([file], { type: 'audio/mpeg' });
-      }
+      // Force correct MIME type based on detected format
+      let audioBlob = audioToUpload;
+      const mimeTypeMap = {
+        'MP3': 'audio/mpeg',
+        'WAV or similar (RIFF)': 'audio/wav',
+        'AAC': 'audio/aac',
+        'OGG': 'audio/ogg',
+        'WebM': 'audio/webm',
+      };
       
-      formData.append('audio_data', audioBlob, file.name);
+      const correctMimeType = mimeTypeMap[detectedFormat] || audioToUpload.type || 'audio/mpeg';
+      audioBlob = new Blob([audioToUpload], { type: correctMimeType });
+      
+      console.log('Sending to AssemblyAI with MIME type:', correctMimeType);
+      
+      formData.append('audio_data', audioBlob, audioToUpload.name);
 
       setUploadState('uploading');
       setError('📤 Uploading audio file... This may take a few minutes for large files.');
