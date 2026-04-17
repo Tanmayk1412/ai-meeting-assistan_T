@@ -53,6 +53,7 @@ export default function NewMeeting() {
 
   const saveMeetingData = async () => {
     if (!title.trim()) { setError('Please add a title.'); return; }
+    if (!user?.email) { setError('❌ User not authenticated. Please login again.'); return; }
     setSaving(true);
     setError('');
     try {
@@ -70,7 +71,8 @@ export default function NewMeeting() {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-      console.log('💾 Saving meeting:', meeting);
+      console.log('💾 Saving meeting with username:', user.email);
+      console.log('💾 Meeting object:', meeting);
       await saveMeeting(user.email, meeting);
       console.log('✅ Meeting saved successfully!');
       alert('✅ Meeting saved successfully!');
