@@ -54,6 +54,7 @@ export default function NewMeeting() {
   const saveMeetingData = async () => {
     if (!title.trim()) { setError('Please add a title.'); return; }
     setSaving(true);
+    setError('');
     try {
       const meeting = {
         id: Date.now().toString(),
@@ -69,10 +70,17 @@ export default function NewMeeting() {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
+      console.log('💾 Saving meeting:', meeting);
       await saveMeeting(user.email, meeting);
+      console.log('✅ Meeting saved successfully!');
+      alert('✅ Meeting saved successfully!');
       router.push(`/meeting/${meeting.id}`);
     } catch (err) {
+      console.error('❌ Save error:', err);
       setError('Save failed: ' + err.message);
+      setSaving(false);
+    }
+  };
     } finally {
       setSaving(false);
     }
