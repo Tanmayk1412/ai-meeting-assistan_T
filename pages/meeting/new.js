@@ -81,10 +81,6 @@ export default function NewMeeting() {
       setSaving(false);
     }
   };
-    } finally {
-      setSaving(false);
-    }
-  };
 
   // ── FIX 1: Direct AssemblyAI upload for large files ──
   const handleFileUpload = async (e) => {
