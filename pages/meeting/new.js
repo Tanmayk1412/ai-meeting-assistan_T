@@ -53,7 +53,7 @@ export default function NewMeeting() {
 
   const saveMeetingData = async () => {
     if (!title.trim()) { setError('Please add a title.'); return; }
-    if (!user?.email) { setError('❌ User not authenticated. Please login again.'); return; }
+    if (!user?.username) { setError('❌ User not authenticated. Please login again.'); return; }
     setSaving(true);
     setError('');
     try {
@@ -71,9 +71,9 @@ export default function NewMeeting() {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-      console.log('💾 Saving meeting with username:', user.email);
+      console.log('💾 Saving meeting with username:', user.username);
       console.log('💾 Meeting object:', meeting);
-      await saveMeeting(user.email, meeting);
+      await saveMeeting(user.username, meeting);
       console.log('✅ Meeting saved successfully!');
       alert('✅ Meeting saved successfully!');
       router.push(`/meeting/${meeting.id}`);

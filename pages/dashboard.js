@@ -24,7 +24,7 @@ export default function Dashboard() {
   const fetchMeetings = async () => {
     setFetching(true);
     try {
-      const data = await getMeetings(user.email);
+      const data = await getMeetings(user.username);
       setMeetings(data.meetings || []);
     } catch (err) {
       console.error(err);
@@ -37,7 +37,7 @@ export default function Dashboard() {
     if (!confirm('Delete this meeting?')) return;
     setDeleting(meetingId);
     try {
-      await deleteMeeting(user.email, meetingId);
+      await deleteMeeting(user.username, meetingId);
       setMeetings(m => m.filter(x => x.id !== meetingId));
     } catch (err) {
       alert(err.message);
