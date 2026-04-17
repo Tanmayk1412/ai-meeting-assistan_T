@@ -161,20 +161,23 @@ export default function NewMeeting() {
       // Step 1: Upload to AssemblyAI
       const formData = new FormData();
       
-      // Force correct MIME type based on detected format
+      // Determine correct MIME type
       let audioBlob = audioToUpload;
-      const mimeTypeMap = {
-        'MP3': 'audio/mpeg',
-        'WAV or similar (RIFF)': 'audio/wav',
-        'AAC': 'audio/aac',
-        'OGG': 'audio/ogg',
-        'WebM': 'audio/webm',
-      };
+      let mimeType = 'audio/mpeg'; // Default to MP3 (from conversion)
       
-      const correctMimeType = mimeTypeMap[detectedFormat] || audioToUpload.type || 'audio/mpeg';
-      audioBlob = new Blob([audioToUpload], { type: correctMimeType });
+      // If file wasn't converted (only MP3 files skip conversion), use detected format
+      if (audioToUpload === file) {
+        const mimeTypeMap = {
+          'MP3': 'audio/mpeg',
+          'WebM': 'audio/webm',
+          'OGG': 'audio/ogg',
+        };
+        mimeType = mimeTypeMap[detectedFormat] || audioToUpload.type || 'audio/mpeg';
+      }
       
-      console.log('Sending to AssemblyAI with MIME type:', correctMimeType);
+      audioBlob = new Blob([audioToUpload], { type: mimeType });
+      
+      console.log('Sending to AssemblyAI with MIME type:', mimeType, '| File name:', audioToUpload.name);
       
       formData.append('audio_data', audioBlob, audioToUpload.name);
 
