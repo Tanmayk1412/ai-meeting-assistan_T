@@ -96,6 +96,7 @@ export default function NewMeeting() {
       formData.append('audio_data', file);
 
       setUploadState('uploading');
+      setError('📤 Uploading audio file... This may take a few minutes for large files.');
       const uploadRes = await fetch('https://api.assemblyai.com/v2/upload', {
         method: 'POST',
         headers: { 'Authorization': ASSEMBLYAI_KEY },
@@ -108,11 +109,7 @@ export default function NewMeeting() {
 
       // Step 2: Submit transcription
       setUploadState('transcribing');
-      
-      console.log('🔍 DEBUG - AssemblyAI Setup:');
-      console.log('API Key exists:', !!ASSEMBLYAI_KEY);
-      console.log('API Key length:', ASSEMBLYAI_KEY?.length);
-      console.log('Upload URL:', uploadUrl);
+      setError('🎤 Submitting for transcription... Converting speech to text.');
       
       const transcribeRes = await fetch('https://api.assemblyai.com/v2/transcript', {
         method: 'POST',
@@ -122,7 +119,7 @@ export default function NewMeeting() {
         },
         body: JSON.stringify({ 
           audio_url: uploadUrl,
-          speech_model: 'best',  // Use the best available model
+          speech_models: ['best'],  // NEW: Use speech_models (plural) with 'best' model
         }),
       });
 
@@ -151,6 +148,7 @@ export default function NewMeeting() {
 
         if (statusData.status === 'completed') {
           transcript = statusData.text || '';
+          setError('✅ Transcription complete! Processing results...');
           break;
         }
 
@@ -158,16 +156,27 @@ export default function NewMeeting() {
           throw new Error(`AssemblyAI error: ${statusData.error}`);
         }
 
+        // Show user-friendly progress
+        const progressMsg = {
+          'queued': '⏳ Waiting in queue... (0-5 min)',
+          'processing': '⚙️ Processing audio... Extracting speech (5-30 min for longer files)',
+          'completed': '✅ Done!',
+        }[statusData.status] || `📊 Status: ${statusData.status}`;
+        setError(progressMsg);
+
         if (statusData.confidence !== undefined && statusData.confidence > 0.5) {
           pollInterval = 6000;
         }
 
-        setUploadState(`Processing: ${statusData.status}...`);
         attempts++;
         await new Promise(resolve => setTimeout(resolve, pollInterval));
       }
 
-      if (!transcript) throw new Error('Transcription timed out');
+      if (!transcript) throw new Error('Transcription timed out. Audio may be too long.');
+
+      setTranscript(transcript);
+      setUploadState('done');
+      setError('');  // Clear error on success
 
       // Generate SRT
       const sentences = transcript.match(/[^.!?]+[.!?]+/g) || [transcript];

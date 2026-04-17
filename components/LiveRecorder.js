@@ -46,7 +46,7 @@ async function uploadToAssemblyAI(audioBlob, onProgress) {
       },
       body: JSON.stringify({
         audio_url: uploadUrl,
-        speech_model: 'best',  // Use the best available model
+        speech_models: ['best'],  // Use speech_models (plural) with 'best' model
       }),
     });
 
@@ -87,7 +87,13 @@ async function uploadToAssemblyAI(audioBlob, onProgress) {
         pollInterval = 6000; // Slow down when significant progress
       }
 
-      onProgress?.(`Processing: ${statusData.status}...`);
+      // Show user-friendly progress
+      const progressMsg = {
+        'queued': '⏳ Waiting in queue... (0-5 min)',
+        'processing': '⚙️ Processing audio... Extracting speech (5-30 min for longer files)',
+        'completed': '✅ Done!',
+      }[statusData.status] || `📊 Status: ${statusData.status}`;
+      onProgress?.(progressMsg);
     } catch (err) {
       throw new Error(`Failed to check transcription status: ${err.message}`);
     }
