@@ -15,22 +15,37 @@ async function uploadToAssemblyAI(audioBlob, onProgress) {
   if (!ASSEMBLYAI_KEY) throw new Error('AssemblyAI API key not configured');
 
   // Step 1: Upload audio file to AssemblyAI
-  const formData = new FormData();
-  formData.append('audio_data', audioBlob);
+  // Validate blob before sending - check magic bytes for WebM
+  const arrayBuffer = await audioBlob.arrayBuffer();
+  const header = new Uint8Array(arrayBuffer.slice(0, 4));
+  const headerHex = Array.from(header).map(b => b.toString(16).padStart(2, '0')).join(' ');
+  console.log('📊 Live recording blob info:');
+  console.log('  • Header bytes:', headerHex);
+  console.log('  • Size:', (audioBlob.size / 1024 / 1024).toFixed(2), 'MB');
+  console.log('  • Type:', audioBlob.type);
 
   let uploadUrl;
   try {
+    // Send blob directly as body (not FormData) - AssemblyAI sniffs magic bytes
     const uploadRes = await fetch('https://api.assemblyai.com/v2/upload', {
       method: 'POST',
       headers: {
         'Authorization': ASSEMBLYAI_KEY,
+        'Content-Type': audioBlob.type || 'audio/webm',  // Explicit content type
+        'Transfer-Encoding': 'chunked',
       },
-      body: formData,
+      body: audioBlob,  // Send blob directly, NOT FormData
     });
 
-    if (!uploadRes.ok) throw new Error(`Upload failed: ${uploadRes.status}`);
+    if (!uploadRes.ok) {
+      const errData = await uploadRes.text();
+      console.error('❌ Upload failed:', uploadRes.status, errData);
+      throw new Error(`Upload failed: ${uploadRes.status} - ${errData}`);
+    }
+    
     const uploadData = await uploadRes.json();
     uploadUrl = uploadData.upload_url;
+    console.log('✅ Upload successful:', uploadUrl);
   } catch (err) {
     throw new Error(`Failed to upload audio to AssemblyAI: ${err.message}`);
   }
