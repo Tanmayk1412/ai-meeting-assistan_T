@@ -125,7 +125,8 @@ export default function NewMeeting() {
         },
         body: JSON.stringify({ 
           audio_url: uploadUrl,
-          speech_models: ['universal-2'],  // Current API: plural with explicit model
+          language_code: 'en',  // Force English transcription
+          speech_models: ['universal-2'],
         }),
       });
 
